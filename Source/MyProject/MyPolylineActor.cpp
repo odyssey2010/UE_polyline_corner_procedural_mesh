@@ -100,7 +100,7 @@ void AMyPolylineActor::BuildPolylineTightCut()
 
 	FVector Point, PrevPoint, NextPoint;
 	FVector PrevDir, NextDir, PrevOutDir, NextOutDir;
-	FVector OutDir, OutDirLeft, UpDir = FVector::ZAxisVector; // Outward, Upward Direction
+	FVector OutDir, UpDir = FVector::ZAxisVector; // Outward, Upward Direction
 	FVector V0, V1, V2;
 	int32 I0, I1, I2, PrevI0 = 0, PrevI1 = 0;
 
@@ -171,7 +171,7 @@ void AMyPolylineActor::BuildPolylineTightCut()
 			FVector DirRight = UpDir.Cross(PrevDir);
 
 			InnerPoint = Point - OutDir * (OutDirScale * HalfThickness * CornerSign);
-			LeftPoint = InnerPoint + DirLeft * (Thickness * CornerSign);
+			LeftPoint  = InnerPoint + DirLeft * (Thickness * CornerSign);
 			RightPoint = InnerPoint + DirRight * (Thickness * CornerSign);
 
 			if (CornerSign > 0.0f)
