@@ -31,8 +31,8 @@
 UENUM()
 enum CornerTypeEnum
 {
-	ArrowCut,
-	FlatCut
+	FlatCut,
+	TightCut
 };
 
 UCLASS()
@@ -54,6 +54,7 @@ protected:
 
 	virtual void PostLoad() override;
 
+	void BuildPolylineTightCut();
 	void BuildPolylineFlatCut();
 
 public:	
@@ -64,10 +65,13 @@ public:
 	class UProceduralMeshComponent* ProceduralMesh{ nullptr };
 
 	UPROPERTY(EditAnywhere)
+		TEnumAsByte<CornerTypeEnum> CutCorner{ FlatCut };
+
+	UPROPERTY(EditAnywhere)
 		TArray<FVector> Points;
 
 	UPROPERTY(EditAnywhere)
-		float Thickness{ 50.0f };
+		float Thickness{ 1.0f };
 
 	UPROPERTY(EditAnywhere)
 		FLinearColor Color { 1.0f, 0.0f, 0.0f, 1.0f };

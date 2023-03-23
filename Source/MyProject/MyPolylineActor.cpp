@@ -79,6 +79,10 @@ void AMyPolylineActor::PostLoad()
 
 		Thickness = 100;
 
+		//CutCorner = ArrowCut;
+		//BuildPolyline();
+
+		CutCorner = FlatCut;
 		BuildPolylineFlatCut();
 		return;
 	}
@@ -88,7 +92,7 @@ void AMyPolylineActor::PostLoad()
 
 #define DEBUGMESSAGE(x, ...) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Red, FString::Printf(TEXT(x), __VA_ARGS__));}
 
-void AMyPolylineActor::BuildPolylineFlatCut()
+void AMyPolylineActor::BuildPolylineTightCut()
 {
 	TArray<FVector> Vertices;
 	TArray<FLinearColor> Colors;
@@ -162,6 +166,132 @@ void AMyPolylineActor::BuildPolylineFlatCut()
 			float SinValue = FMath::Sin(Angle * 0.5f);
 			float OutDirScale = FMath::IsNearlyZero(SinValue, 0.01f) ? 1000.0f : (1.0f / SinValue);
 
+			// Calculate triangle points of corner at tight cut.
+			FVector DirLeft = UpDir.Cross(NextDir);
+			FVector DirRight = UpDir.Cross(PrevDir);
+
+			InnerPoint = Point - OutDir * (OutDirScale * HalfThickness * CornerSign);
+			LeftPoint = InnerPoint + DirLeft * (Thickness * CornerSign);
+			RightPoint = InnerPoint + DirRight * (Thickness * CornerSign);
+
+			if (CornerSign > 0.0f)
+			{
+				V0 = RightPoint;
+				V1 = InnerPoint;
+				V2 = LeftPoint;
+			}
+			else
+			{
+				V0 = InnerPoint;
+				V1 = RightPoint;
+				V2 = LeftPoint;
+			}
+
+			I0 = Vertices.Add(V0);
+			I1 = Vertices.Add(V1);
+			I2 = Vertices.Add(V2);
+
+			// Add rectangle of start and end segment
+			Triangles.Append({ I0, I1, PrevI0, PrevI0, I1, PrevI1 });
+
+			// Add triangle of corner
+			Triangles.Append({ I2, I1, I0 });
+
+			Colors.Append({ Color, Color, Color });
+
+			if (CornerSign > 0.0f)
+			{
+				PrevI0 = I2;
+				PrevI1 = I1;
+			}
+			else
+			{
+				PrevI0 = I0;
+				PrevI1 = I2;
+			}
+		}
+
+		PrevPoint = Point;
+	}
+
+	ProceduralMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, {}, {}, Colors, {}, false);
+}
+
+
+void AMyPolylineActor::BuildPolylineFlatCut()
+{
+	TArray<FVector> Vertices;
+	TArray<FLinearColor> Colors;
+	TArray<int32> Triangles;
+
+	FVector Point, PrevPoint, NextPoint;
+	FVector PrevDir, NextDir, PrevOutDir, NextOutDir;
+	FVector OutDir, OutDirLeft, UpDir = FVector::ZAxisVector; // Outward, Upward Direction
+	FVector V0, V1, V2;
+	int32 I0, I1, I2, PrevI0 = 0, PrevI1 = 0;
+
+	// Triangle points of corner
+	FVector InnerPoint, LeftPoint, RightPoint;
+
+	const float HalfThickness = Thickness * 0.5f;
+	bool IsCorner = false;
+	float CornerSign = 0.0f;
+
+	for (int32 i = 0, NumPoly = Points.Num(); i < NumPoly; ++i)
+	{
+		Point = Points[i];
+		NextPoint = Points[(i < (NumPoly - 1)) ? (i + 1) : 0];
+
+		IsCorner = (0 < i && i < (NumPoly - 1));
+
+		if (IsCorner == false)
+		{
+			if (i == 0)
+			{
+				PrevDir = (NextPoint - Point).GetSafeNormal();
+				OutDir = UpDir.Cross(PrevDir);
+			}
+			else if (i == (NumPoly - 1))
+			{
+				PrevDir = (Point - PrevPoint).GetSafeNormal();
+				OutDir = UpDir.Cross(PrevDir);
+			}
+
+			V0 = Point + OutDir * HalfThickness;
+			V1 = Point - OutDir * HalfThickness;
+
+			I0 = Vertices.Add(V0);
+			I1 = Vertices.Add(V1);
+
+			// Add rectangle of start and end segment
+			Triangles.Append({ I0, I1, PrevI0, PrevI0, I1, PrevI1 });
+
+			Colors.Append({ Color, Color });
+
+			PrevI0 = I0;
+			PrevI1 = I1;
+		}
+		else
+		{
+			PrevDir = (Point - PrevPoint).GetSafeNormal();
+			PrevOutDir = UpDir.Cross(PrevDir);
+
+			NextDir = (NextPoint - Point).GetSafeNormal();
+			NextOutDir = UpDir.Cross(NextDir);
+
+			OutDir = (PrevOutDir + NextOutDir).GetSafeNormal();
+
+			// If the value of cos(еш) is positive, the angle between the vectors is acute.
+			// If the value of cos(еш) is negative, the angle between the vectors is obtuse.
+			CornerSign = (NextDir.Cross(PrevDir).Z > 0.0f) ? 1.0f : -1.0f;
+
+			// Calculate triangle points of corner with tickness.
+			float CosTheta = NextDir.Dot(-PrevDir);
+			float Angle = FMath::Acos(CosTheta);
+
+			float SinValue = FMath::Sin(Angle * 0.5f);
+			float OutDirScale = FMath::IsNearlyZero(SinValue, 0.01f) ? 1000.0f : (1.0f / SinValue);
+
 			float TanAngle = UE_PI - Angle;
 			float TanScale = FMath::Tan(TanAngle * 0.25f);
 
@@ -213,6 +343,163 @@ void AMyPolylineActor::BuildPolylineFlatCut()
 	ProceduralMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, {}, {}, Colors, {}, false);
 }
 
+/*
+void AMyPolylineActor::BuildPolylineFlatCut()
+{
+	TArray<FVector> Vertices;
+	TArray<FLinearColor> Colors;
+	TArray<int32> Triangles;
+
+	FVector Point, PrevPoint, NextPoint;
+	FVector PrevDir, NextDir, PrevOutDir, NextOutDir;
+	FVector OutDir, UpDir = FVector::ZAxisVector; // Outward, Upward Direction
+	FVector V0, V1, V2;
+	int32 I0, I1, I2, PrevI0 = 0, PrevI1 = 0;
+
+	// Triangle points of corner
+	FVector InnerPoint, LeftPoint, RightPoint;
+
+	const float HalfThickness = Thickness * 0.5f;
+	
+	for (int32 i = 0, NumPoly = Points.Num(); i < NumPoly; ++i)
+	{
+		bool IsCorner = (0 < i && i < NumPoly - 1);
+		float CornerSign = 0.0f;
+
+		Point = Points[i];
+		NextPoint = Points[(i < NumPoly - 1) ? (i + 1) : 0];
+
+		if (i == 0)
+		{
+			PrevDir = (NextPoint - Point).GetSafeNormal();
+			OutDir = UpDir.Cross(PrevDir);
+		}
+		else if (i == NumPoly - 1)
+		{
+			PrevDir = (Point - PrevPoint).GetSafeNormal();
+			OutDir = UpDir.Cross(PrevDir);
+		}
+		else
+		{
+			PrevDir = (Point - PrevPoint).GetSafeNormal();
+			PrevOutDir = UpDir.Cross(PrevDir);
+
+			NextDir = (NextPoint - Point).GetSafeNormal();
+			NextOutDir = UpDir.Cross(NextDir);
+
+			OutDir = (PrevOutDir + NextOutDir).GetSafeNormal();
+		}
+
+		if (IsCorner == false)
+		{
+			V0 = Point + OutDir * HalfThickness;
+			V1 = Point - OutDir * HalfThickness;
+		}
+		else
+		{
+			// If the value of cos(еш) is positive, the angle between the vectors is acute.
+			// If the value of cos(еш) is negative, the angle between the vectors is obtuse.
+			FVector CornerNormal = NextDir.Cross(PrevDir);
+			CornerSign = (CornerNormal.Z > 0.0f) ? 1.0f : -1.0f;
+
+			// Calculate triangle points of corner
+			float CosTheta = NextDir.Dot(-PrevDir);
+			float Angle = FMath::Acos(CosTheta);
+
+			float SinValue = FMath::Sin(Angle * 0.5f);
+			float OutDirScale = FMath::IsNearlyZero(SinValue, 0.01f) ? 1000.0f : (1.0f / SinValue);
+
+			if (0)	// TightCut
+			{
+				FVector DirLeft = UpDir.Cross(NextDir);
+				FVector DirRight = UpDir.Cross(PrevDir);
+
+				InnerPoint = Point - OutDir * (OutDirScale * HalfThickness * CornerSign);
+				LeftPoint  = InnerPoint + DirLeft * (Thickness * CornerSign);
+				RightPoint = InnerPoint + DirRight * (Thickness * CornerSign);
+
+				if (CornerSign > 0.0f)
+				{
+					V0 = RightPoint;
+					V1 = InnerPoint;
+					V2 = LeftPoint;
+				}
+				else
+				{
+					V0 = InnerPoint;
+					V1 = RightPoint;
+					V2 = LeftPoint;
+				}
+			}
+			else
+			{
+				float TanAngle = UE_PI - Angle;
+				float TanScale = FMath::Tan(TanAngle * 0.25f);
+
+				FVector OutDirLeft = OutDir.Cross(UpDir);
+				InnerPoint = Point - OutDir * (OutDirScale * HalfThickness * CornerSign);
+				LeftPoint  = Point + OutDir * (HalfThickness * CornerSign) + OutDirLeft * (HalfThickness * TanScale);
+				RightPoint = Point + OutDir * (HalfThickness * CornerSign) - OutDirLeft * (HalfThickness * TanScale);
+				
+				if (CornerSign > 0.0f)
+				{
+					V0 = RightPoint;
+					V1 = InnerPoint;
+					V2 = LeftPoint;
+				}
+				else
+				{
+					V0 = InnerPoint;
+					V1 = RightPoint;
+					V2 = LeftPoint;
+				}
+			}
+		}
+
+		I0 = Vertices.Add(V0);
+		I1 = Vertices.Add(V1);
+		Colors.Append({ Color, Color });
+
+		if (i > 0)	
+		{
+			// Add rectangle of start and end segment
+			Triangles.Append({ I0, I1, PrevI0 });
+			Triangles.Append({ PrevI0, I1, PrevI1 });
+			
+			// Add triangle of corner
+			if (IsCorner)
+			{
+				I2 = Vertices.Add(V2);
+				Colors.Add(Color);
+
+				Triangles.Append({ I2, I1, I0 });
+			}
+		}
+
+		// Store indices for next iteration
+		if (IsCorner == false)
+		{
+			PrevI0 = I0;
+			PrevI1 = I1;
+		}
+		else if (CornerSign > 0.0f)
+		{
+			PrevI0 = I2;
+			PrevI1 = I1;
+		}
+		else
+		{
+			PrevI0 = I0;
+			PrevI1 = I2;
+		}
+
+		PrevPoint = Point;
+	}
+
+	ProceduralMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, {}, {}, Colors, {}, false);	
+}
+*/
+
 // Called every frame
 void AMyPolylineActor::Tick(float DeltaTime)
 {
@@ -231,7 +518,14 @@ void AMyPolylineActor::Tick(float DeltaTime)
 
 void AMyPolylineActor::BuildMesh()
 {
-	BuildPolylineFlatCut();
+	if (CutCorner == CornerTypeEnum::TightCut)
+	{
+		BuildPolylineTightCut();
+	}
+	else if (CutCorner == CornerTypeEnum::FlatCut)
+	{
+		BuildPolylineFlatCut();
+	}
 }
 
 void AMyPolylineActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
