@@ -67,26 +67,6 @@ void AMyPolylineActor::PostLoad()
 {
 	Super::PostLoad();
 
-	if (0)
-	{
-		Points =
-		{
-			{ 100, 0, 0 },
-			{ 0, -100, 0 },
-			//{ 0, 100, 0 },
-			{ -100, 0, 0 },
-		};
-
-		Thickness = 100;
-
-		//CutCorner = ArrowCut;
-		//BuildPolyline();
-
-		CutCorner = ExactCut;
-		BuildPolylineExactCut();
-		return;
-	}
-
 	BuildMesh();
 }
 
@@ -216,7 +196,6 @@ void AMyPolylineActor::BuildPolylineSimpleCut()
 
 	ProceduralMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, {}, {}, Colors, {}, false);
 }
-
 
 void AMyPolylineActor::BuildPolylineExactCut()
 {
