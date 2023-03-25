@@ -82,8 +82,8 @@ void AMyPolylineActor::PostLoad()
 		//CutCorner = ArrowCut;
 		//BuildPolyline();
 
-		CutCorner = FlatCut;
-		BuildPolylineFlatCut();
+		CutCorner = ExactCut;
+		BuildPolylineExactCut();
 		return;
 	}
 
@@ -92,7 +92,7 @@ void AMyPolylineActor::PostLoad()
 
 #define DEBUGMESSAGE(x, ...) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Red, FString::Printf(TEXT(x), __VA_ARGS__));}
 
-void AMyPolylineActor::BuildPolylineTightCut()
+void AMyPolylineActor::BuildPolylineSimpleCut()
 {
 	TArray<FVector> Vertices;
 	TArray<FLinearColor> Colors;
@@ -218,7 +218,7 @@ void AMyPolylineActor::BuildPolylineTightCut()
 }
 
 
-void AMyPolylineActor::BuildPolylineFlatCut()
+void AMyPolylineActor::BuildPolylineExactCut()
 {
 	TArray<FVector> Vertices;
 	TArray<FLinearColor> Colors;
@@ -361,13 +361,13 @@ void AMyPolylineActor::Tick(float DeltaTime)
 
 void AMyPolylineActor::BuildMesh()
 {
-	if (CutCorner == CornerTypeEnum::TightCut)
+	if (CutCorner == CornerTypeEnum::SimpleCut)
 	{
-		BuildPolylineTightCut();
+		BuildPolylineSimpleCut();
 	}
-	else if (CutCorner == CornerTypeEnum::FlatCut)
+	else if (CutCorner == CornerTypeEnum::ExactCut)
 	{
-		BuildPolylineFlatCut();
+		BuildPolylineExactCut();
 	}
 }
 

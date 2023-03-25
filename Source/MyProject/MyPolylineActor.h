@@ -31,8 +31,8 @@
 UENUM()
 enum CornerTypeEnum
 {
-	FlatCut,
-	TightCut
+	SimpleCut,		// cut at a point
+	ExactCut		// cut at a thickness extended point
 };
 
 UCLASS()
@@ -54,8 +54,8 @@ protected:
 
 	virtual void PostLoad() override;
 
-	void BuildPolylineTightCut();
-	void BuildPolylineFlatCut();
+	void BuildPolylineSimpleCut();
+	void BuildPolylineExactCut();
 
 public:	
 	// Called every frame
@@ -65,7 +65,7 @@ public:
 	class UProceduralMeshComponent* ProceduralMesh{ nullptr };
 
 	UPROPERTY(EditAnywhere)
-		TEnumAsByte<CornerTypeEnum> CutCorner{ FlatCut };
+		TEnumAsByte<CornerTypeEnum> CutCorner{ ExactCut };
 
 	UPROPERTY(EditAnywhere)
 		TArray<FVector> Points;
