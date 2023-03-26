@@ -66,7 +66,7 @@ public:
 	class UProceduralMeshComponent* ProceduralMesh{ nullptr };
 
 	UPROPERTY(EditAnywhere)
-		TEnumAsByte<CornerTypeEnum> CutCorner{ ExactCut };
+		TEnumAsByte<CornerTypeEnum> CutCorner{ SimpleCut };
 
 	UPROPERTY(EditAnywhere)
 		TArray<FVector> Points{
