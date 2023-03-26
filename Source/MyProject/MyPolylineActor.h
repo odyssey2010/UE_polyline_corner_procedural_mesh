@@ -31,8 +31,8 @@
 UENUM()
 enum CornerTypeEnum
 {
-	SimpleCut,		// cut at a point
-	ExactCut		// cut at a thickness extended point
+	SimpleCut,		// cut corner at a point
+	ExactCut		// cut corner at a point of extended thickness
 };
 
 UCLASS()
@@ -52,9 +52,10 @@ protected:
 
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
-	virtual void PostLoad() override;
+	virtual void PostActorCreated() override;
 
 	void BuildPolylineSimpleCut();
+
 	void BuildPolylineExactCut();
 
 public:	
@@ -68,16 +69,20 @@ public:
 		TEnumAsByte<CornerTypeEnum> CutCorner{ ExactCut };
 
 	UPROPERTY(EditAnywhere)
-		TArray<FVector> Points;
+		TArray<FVector> Points{
+			{100.0f, 0.0f, 0.0f},
+			{0.0f, -100.0f, 0.0f},
+			{-100.0f, 0.0f, 0.0f}
+		};
 
 	UPROPERTY(EditAnywhere)
-		float Thickness{ 1.0f };
+		float Thickness{ 50.0f };
 
 	UPROPERTY(EditAnywhere)
-		FLinearColor Color { 1.0f, 0.0f, 0.0f, 1.0f };
+		FLinearColor Color{ 1.0f, 0.0f, 0.0f, 1.0f };
 
 	UPROPERTY(EditAnywhere)
-		FVector RotationSpeed { FVector::ZeroVector	};
+		FVector RotationSpeed{ FVector::ZeroVector	};
 	
 	UMaterial* Material{ nullptr };
 };

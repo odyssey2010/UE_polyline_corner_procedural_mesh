@@ -63,9 +63,9 @@ void AMyPolylineActor::BeginPlay()
 	BuildMesh();
 }
 
-void AMyPolylineActor::PostLoad()
+void AMyPolylineActor::PostActorCreated()
 {
-	Super::PostLoad();
+	Super::PostActorCreated();
 
 	BuildMesh();
 }
